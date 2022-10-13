@@ -1,12 +1,39 @@
-# Tracing with Spring Cloud Sleuth, OpenTelemetry and Logz.io
+# Tracing logs in to kafka and stream them in ELK with JSON format
  
 - run `./mvnw clean install` to build the two Spring Boot applications (`api-service` and `customer-service`)
-- run `LOGZIO_REGION=<YOUR_LOGZIO_REGION> LOGZIO_TRACES_TOKEN=<YOUR_LOGZIO_TRACING_TOKEN> docker-compose up --build`
-- call `http://localhost:8080/customers/<ID>` (where ID is a number from 1 to 50)
+- run and install `zookeeper`
+- run and install `kafka`
+- run and install `elastic search`
+- install logstash and add this file in main installation path and run it with `..\logstash-8.4.3\bin\logstash.bat -f ..\logstash-8.4.3\logstash.conf`
 
-The above HTTP call goes to the `api-service`, which will call the `customer-service` for additional information. This will create a trace across both services, as should be evident in the logs with the same trace id.
+```yml
+input {
+    kafka {
+            bootstrap_servers => "localhost:9092"
+            topics => ["tas-logs"]
+    }
+} 
 
-The `docker-compose` command also starts up an OpenTelemetry Collector, to which the Spring Boot apps send their traces. The OpenTelemetry Collector, in turn, sends the traces to Logz.io.
+filter {
+  json {
+    source => "message"
+  }
+}
 
-## Companion Article
-[Tracing with Spring Boot, OpenTelemetry, and Jaeger](https://reflectoring.io/spring-boot-tracing)
+output {
+   elasticsearch {
+      hosts => ["127.0.0.1:9200"]
+      index => "tas-logs-%{+YYYY.MM.dd}"
+      workers => 1
+      ssl => true
+      ssl_certificate_verification => false
+      user => '{YOUR_USERNAME}'
+      password => '{YOUR_PASSWORD}'
+      codec => "json"
+    }
+}
+
+```
+
+- run and install `kibana` (optional)
+- run services
