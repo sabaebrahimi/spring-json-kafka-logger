@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="springAppName" source="spring.application.name"/>
+
+    <!-- You can override this to have a custom pattern -->
+    <property name="CONSOLE_LOG_PATTERN"
+              value="%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+
+    <!-- Appender to log to console -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <!-- Minimum logging level to be presented in the console logs-->
+            <level>DEBUG</level>
+        </filter>
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="json" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+            <timestampFormat>yyyy-MM-dd' 'HH:mm:ss.SSS</timestampFormat>
+        </layout>
+    </appender>
+
+    <appender name="kafkaAppender" class="com.github.danielwegener.logback.kafka.KafkaAppender">
+        <encoder class="com.github.danielwegener.logback.kafka.encoding.LayoutKafkaMessageEncoder">
+
+            <layout class="net.logstash.logback.layout.LogstashLayout">
+                <customFields>{"service": "${springAppName}" }</customFields>
+                <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                    <valueMasker class="com.example.demo.SensitiveMaskingPatternLayout"/>
+                </jsonGeneratorDecorator>
+            </layout>
+        </encoder>
+        <topic>tas-logs</topic>
+        <keyingStrategy class="com.github.danielwegener.logback.kafka.keying.RoundRobinKeyingStrategy" />
+        <deliveryStrategy class="com.github.danielwegener.logback.kafka.delivery.AsynchronousDeliveryStrategy" />
+        <producerConfig>bootstrap.servers=localhost:9092</producerConfig>
+
+        <appender-ref ref="json" />
+    </appender>
+
+    <logger name="jsonLogger" level="INFO">
+        <appender-ref ref="json" />
+    </logger>
+
+    <logger name="kafkaLogger" level="INFO">
+        <appender-ref ref="kafkaAppender" />
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="console"/>
+    </root>
+</configuration>

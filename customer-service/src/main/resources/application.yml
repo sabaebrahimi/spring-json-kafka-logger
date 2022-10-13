@@ -1,0 +1,31 @@
+server.port: 8081
+
+spring:
+  output:
+    ansi:
+      enabled: always
+  application:
+    name: customer-service
+
+  sleuth:
+    otel:
+      exporter:
+        otlp:
+          endpoint: http://collector:4317
+
+management:
+  endpoint:
+    beans:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: beans
+
+opentracing:
+  jaeger:
+    enabled: true
+    udp-sender:
+      port: 6831
+      host: localhost
+    log-spans: true
